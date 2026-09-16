@@ -2,7 +2,7 @@
 
 Named after [_The Talented Mr. Ripley_](https://en.wikipedia.org/wiki/The_Talented_Mr._Ripley) by Patricia Highsmith.
 
-Build and package Flutter iOS apps on Linux without macOS or Xcode.
+Build and package Flutter iOS apps on Linux or Windows (WSL 2) without macOS or Xcode.
 
 Ripley compiles Dart AOT, C/C++/Objective-C/Swift code, CocoaPods, and SwiftPM packages, links Mach-O binaries, packages resources, signs IPAs, and installs them directly onto physical iPhones over USB.
 
@@ -28,14 +28,46 @@ Tested on real-world Flutter apps including [LocalSend](https://github.com/local
 - **CocoaPods** (if your project uses pods)
 - **usbmuxd** (for USB device deployment)
 
-> **Where to get the iPhoneOS SDK:**
-> Ripley does not distribute Apple proprietary files. You can obtain `iPhoneOS.sdk` and the Swift iOS runtime from Xcode:
-> - **Download Xcode (`Xcode.xip`):** Go to [developer.apple.com/download/all/?q=Xcode](https://developer.apple.com/download/all/?q=Xcode) in your browser (requires logging in with your Apple ID and accepting terms; do not use `curl`).
-> - **Files needed from Xcode:**
->   - SDK: `Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk`
->   - Swift iOS libs: `Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos`
-> - **Sync from a Mac:** If you have access to a Mac with Xcode, you can sync the SDK directly:
->   `ripley setup --sdk user@mac:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk`
+### Windows / WSL 2
+
+Ripley is designed for Linux and should also work under **WSL 2**. The build and packaging path uses the same Linux toolchain as a native Linux host, but WSL 2 is not currently part of Ripley’s CI/test matrix.
+
+Building IPAs in WSL 2 needs no special Ripley configuration beyond the normal prerequisites above. Deploying to a physical iPhone additionally requires passing the USB device through from Windows to WSL. Microsoft supports this with [`usbipd-win`](https://learn.microsoft.com/windows/wsl/connect-usb):
+
+```powershell
+# PowerShell as Administrator (once per device)
+usbipd list
+usbipd bind --busid <BUSID>
+
+# Normal PowerShell, while WSL is running
+usbipd attach --wsl --busid <BUSID>
+```
+
+Then verify the device inside WSL and use Ripley normally:
+
+```bash
+lsusb
+ripley device list
+```
+
+USB attachment is not persistent across reboot/unplug, and while a device is attached to WSL it is not available to Windows. Keep `usbmuxd` running inside the WSL distribution for Ripley’s device commands.
+
+### iPhoneOS SDK and Swift runtime
+
+Ripley does not distribute Apple proprietary files. Obtain them from Xcode via [Apple Developer Downloads](https://developer.apple.com/download/all/?q=Xcode) (Apple ID and license acceptance required).
+
+You need these two directories from `Xcode.app`:
+
+```text
+Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos
+```
+
+If you have access to a Mac with Xcode installed, Ripley can copy the SDK directly over SSH:
+
+```bash
+ripley setup --sdk user@mac:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+```
 
 ## Installation
 
