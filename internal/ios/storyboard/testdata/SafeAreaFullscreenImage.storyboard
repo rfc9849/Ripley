@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22154" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22131"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="EHf-IW-A2E">
+            <objects>
+                <viewController id="01J-lp-oVM" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
+                        <subviews>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="center" image="Cover" translatesAutoresizingMaskIntoConstraints="NO" id="Cov-00-img"/>
+                        </subviews>
+                        <color key="backgroundColor" name="BrandBackground"/>
+                        <constraints>
+                            <constraint firstItem="Cov-00-img" firstAttribute="top" secondItem="1Xd-am-t49" secondAttribute="top" id="c-top-01"/>
+                            <constraint firstItem="Cov-00-img" firstAttribute="bottom" secondItem="1Xd-am-t49" secondAttribute="bottom" id="c-bot-02"/>
+                            <constraint firstItem="Cov-00-img" firstAttribute="leading" secondItem="1Xd-am-t49" secondAttribute="leading" id="c-lea-03"/>
+                            <constraint firstItem="Cov-00-img" firstAttribute="trailing" secondItem="1Xd-am-t49" secondAttribute="trailing" id="c-tra-04"/>
+                        </constraints>
+                        <viewLayoutGuide key="safeArea" id="1Xd-am-t49"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="Cover" width="1170" height="2532"/>
+        <namedColor name="BrandBackground">
+            <color red="0.05" green="0.05" blue="0.07" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+    </resources>
+</document>

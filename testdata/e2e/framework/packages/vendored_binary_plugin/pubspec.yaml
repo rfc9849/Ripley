@@ -1,0 +1,14 @@
+name: vendored_binary_plugin
+description: Synthetic native fixture for ripley vendored binary support.
+version: 0.0.1
+publish_to: none
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+flutter:
+  plugin:
+    platforms:
+      ios:
+        pluginClass: VendoredBinaryPlugin

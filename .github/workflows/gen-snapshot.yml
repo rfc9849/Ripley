@@ -1,0 +1,155 @@
+name: gen_snapshot (ios-arm64 cross)
+
+# Builds the cross gen_snapshot through the exact same `ripley toolchain build`
+# code path users run locally. Native Linux x64 and arm64 binaries both emit
+# ios-arm64 Mach-O AOT snapshots and are published so users can skip the Dart
+# source build.
+#
+# Release layout (must stay in sync with internal/toolchain/prebuilt.go):
+#
+#   tag:    gen-snapshot-dart<dart_version>
+#   assets: gen_snapshot_ios_arm64-dart<dart_version>-linux-x64{,.sha256,.LICENSES.txt}
+#           gen_snapshot_ios_arm64-dart<dart_version>-linux-arm64{,.sha256,.LICENSES.txt}
+#
+# This is a long job (Dart SDK checkout is several GB) and is manual-dispatch
+# only. The workflow intentionally contains no duplicate Dart/GN patch logic:
+# internal/toolchain.BuildGenSnapshot is the single source of truth.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dart_version:
+        description: 'Dart SDK tag to build (e.g. 3.13.3)'
+        required: true
+        type: string
+      publish:
+        description: 'Publish as a GitHub release asset'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build linux-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 300
+    env:
+      DART_VERSION: ${{ inputs.dart_version }}
+      HOST_ARCH: ${{ matrix.arch }}
+      ASSET: gen_snapshot_ios_arm64-dart${{ inputs.dart_version }}-linux-${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+                      /usr/local/share/boost "$AGENT_TOOLSDIRECTORY"
+          df -h /
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 curl git build-essential file
+
+      - name: Build ripley from this commit
+        run: go build -o "$RUNNER_TEMP/ripley" ./cmd/ripley
+
+      - name: Build cross gen_snapshot through ripley
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          "$RUNNER_TEMP/ripley" toolchain build \
+            --dart-version "$DART_VERSION" \
+            --workdir "$RUNNER_TEMP/dartbuild" \
+            --output "$GITHUB_WORKSPACE/dist/$ASSET"
+
+      - name: Verify artifact and checksum
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE/dist"
+          test -x "$ASSET"
+          file "$ASSET"
+          machine=$(file "$ASSET")
+          case "$HOST_ARCH" in
+            x64)   echo "$machine" | grep -Eq 'x86-64|x86_64' ;;
+            arm64) echo "$machine" | grep -Eq 'aarch64|ARM aarch64' ;;
+          esac
+          sha256sum "$ASSET" > "$ASSET.sha256"
+          cat "$ASSET.sha256"
+          "./$ASSET" --version 2>&1 | tee version.txt
+          grep -qF "Dart SDK version: ${DART_VERSION}" version.txt
+
+      - name: Collect Dart redistribution notices
+        run: |
+          set -euo pipefail
+          checkout="$RUNNER_TEMP/dartbuild/dartsdk"
+          out="$GITHUB_WORKSPACE/dist/$ASSET.LICENSES.txt"
+          test -f "$checkout/sdk/LICENSE"
+          cd "$checkout"
+          {
+            echo "Licenses and notices from the Dart SDK source checkout used to build $ASSET"
+            echo
+            find sdk \
+              -path 'sdk/out' -prune -o \
+              -type f \( -iname 'LICENSE*' -o -iname 'COPYING*' -o -iname 'NOTICE*' -o -name 'PATENT_GRANT' -o -name 'AUTHORS' \) \
+              -print | LC_ALL=C sort | while IFS= read -r file; do
+                echo "===== $file ====="
+                cat "$file"
+                echo
+              done
+          } > "$out"
+          test -s "$out"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ASSET }}
+          path: |
+            dist/${{ env.ASSET }}
+            dist/${{ env.ASSET }}.sha256
+            dist/${{ env.ASSET }}.LICENSES.txt
+          if-no-files-found: error
+
+  publish:
+    if: ${{ inputs.publish }}
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      DART_VERSION: ${{ inputs.dart_version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: gen_snapshot_ios_arm64-dart*-linux-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag="gen-snapshot-dart${DART_VERSION}"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --title "gen_snapshot ios-arm64 (Dart ${DART_VERSION})" \
+              --notes "Cross gen_snapshot binaries for Linux x64 and arm64 hosts. Both emit ios-arm64 Mach-O AOT snapshots and are installed by ripley toolchain fetch. Each binary is published with the license/notices collected from the exact Dart SDK checkout used to build it."
+          fi
+          gh release upload "$tag" dist/* --clobber

@@ -1,0 +1,19 @@
+# Build outputs and tool caches
+build/
+bin/
+dist/
+.ripley/
+.tmp/
+/ripley
+/ripley-*
+
+
+# macOS metadata
+.DS_Store
+
+# Signing material and packaged apps must never be committed
+.ripley-signing/
+*.p12
+*.p8
+*.mobileprovision
+*.ipa

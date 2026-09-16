@@ -1,0 +1,209 @@
+name: e2e (ripley build ios on Linux)
+
+# Builds a real `flutter create`d app for iOS on a Linux runner with
+# `ripley build ios --no-sign`.
+#
+# WHY THIS IS OPT-IN AND CAN SKIP
+# -------------------------------
+# Linking a native iOS app host needs the iPhoneOS SDK (headers + tbd stubs)
+# and the Swift iOS runtime libraries. Both come out of Xcode and Apple's
+# license does not permit redistributing them, so they cannot be committed or
+# downloaded from a public URL. The job therefore requires the repository to
+# supply its own copy through the `IPHONEOS_SDK_URL` secret (a URL to a
+# tar.gz/zip of `iPhoneOS.sdk`, optionally with a `swift/iphoneos` payload).
+#
+# When that secret is absent the job SKIPS EXPLICITLY: the `preflight` job
+# fails to find the secret, publishes `sdk_available=false`, and the `e2e` job
+# is not run at all. GitHub reports it as "skipped", never as a green pass, so
+# a missing SDK can never be mistaken for a successful iOS build.
+
+on:
+  workflow_dispatch:
+    inputs:
+      flutter_channel:
+        description: 'Flutter channel to install'
+        required: false
+        default: 'stable'
+        type: string
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      sdk_available: ${{ steps.check.outputs.sdk_available }}
+    steps:
+      - name: Check for an iPhoneOS SDK source
+        id: check
+        env:
+          IPHONEOS_SDK_URL: ${{ secrets.IPHONEOS_SDK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -n "${IPHONEOS_SDK_URL:-}" ]; then
+            echo 'sdk_available=true' >> "$GITHUB_OUTPUT"
+            echo 'iPhoneOS SDK source configured; running the e2e iOS build.'
+          else
+            echo 'sdk_available=false' >> "$GITHUB_OUTPUT"
+            {
+              echo '## e2e skipped: no iPhoneOS SDK available'
+              echo
+              echo 'Linking an iOS app host requires the iPhoneOS SDK and the'
+              echo 'Swift iOS runtime libraries, which ship with Xcode and'
+              echo 'cannot be redistributed. Set the `IPHONEOS_SDK_URL` secret'
+              echo 'to a URL of your own `iPhoneOS.sdk` archive to enable this'
+              echo 'job. The iOS build steps were NOT executed.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo '::warning::e2e iOS build skipped — IPHONEOS_SDK_URL secret is not set.'
+          fi
+
+  e2e:
+    needs: preflight
+    if: needs.preflight.outputs.sdk_available == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install host prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld ninja-build unzip zip curl ruby-full
+          sudo gem install --no-document cocoapods -v 1.16.2
+
+      - name: Build and install ripley
+        run: |
+          set -euo pipefail
+          CGO_ENABLED=0 go build -o /tmp/ripley ./cmd/ripley
+          sudo install -m 0755 /tmp/ripley /usr/local/bin/ripley
+          ripley --version
+
+      - name: Install Flutter SDK
+        run: |
+          set -euo pipefail
+          git clone --depth 1 -b '${{ inputs.flutter_channel }}' \
+            https://github.com/flutter/flutter.git "$HOME/flutter-sdk"
+          echo "FLUTTER_ROOT=$HOME/flutter-sdk" >> "$GITHUB_ENV"
+          echo "$HOME/flutter-sdk/bin" >> "$GITHUB_PATH"
+
+      - name: Install Swift for Linux
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/swift.tar.gz \
+            https://download.swift.org/swift-6.2.3-release/ubuntu2404/swift-6.2.3-RELEASE/swift-6.2.3-RELEASE-ubuntu24.04.tar.gz
+          mkdir -p "$HOME/swift6"
+          tar xzf /tmp/swift.tar.gz -C "$HOME/swift6" --strip-components 1
+          echo "RIPLEY_SWIFT=$HOME/swift6" >> "$GITHUB_ENV"
+          "$HOME/swift6/usr/bin/swiftc" --version
+
+      - name: Provision the iPhoneOS SDK
+        env:
+          IPHONEOS_SDK_URL: ${{ secrets.IPHONEOS_SDK_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.ripley/sdks" /tmp/sdkdl
+          curl -fsSL -o /tmp/sdkdl/sdk.archive "$IPHONEOS_SDK_URL"
+          case "$IPHONEOS_SDK_URL" in
+            *.zip) unzip -q /tmp/sdkdl/sdk.archive -d "$HOME/.ripley/sdks" ;;
+            *)     tar xzf /tmp/sdkdl/sdk.archive -C "$HOME/.ripley/sdks" ;;
+          esac
+          rm -rf /tmp/sdkdl
+          found=$(find "$HOME/.ripley/sdks" -maxdepth 2 -name 'iPhoneOS*.sdk' -print -quit)
+          if [ -z "$found" ]; then
+            echo "::error::archive from IPHONEOS_SDK_URL contains no iPhoneOS*.sdk directory"
+            exit 1
+          fi
+          echo "iPhoneOS SDK at $found"
+
+      # The Swift iOS runtime libraries (XcodeDefault.xctoolchain/usr/lib/swift/iphoneos)
+      # are a payload SEPARATE from the SDK; on the reference host they live at
+      # ~/.ripley/sdks/iphoneos, which Toolchain.SwiftIOSLibs() prefers. A
+      # `flutter create`d app has AppDelegate.swift, so this is required, not
+      # optional. Accept it either inside the SDK archive or as its own URL, and
+      # fail loudly rather than falling through to a confusing link error.
+      - name: Provision the Swift iOS runtime libraries
+        env:
+          SWIFT_IOS_LIBS_URL: ${{ secrets.SWIFT_IOS_LIBS_URL }}
+        run: |
+          set -euo pipefail
+          if [ -n "${SWIFT_IOS_LIBS_URL:-}" ] && [ ! -d "$HOME/.ripley/sdks/iphoneos" ]; then
+            mkdir -p "$HOME/.ripley/sdks/iphoneos" /tmp/swiftlibs
+            curl -fsSL -o /tmp/swiftlibs/libs.archive "$SWIFT_IOS_LIBS_URL"
+            case "$SWIFT_IOS_LIBS_URL" in
+              *.zip) unzip -q /tmp/swiftlibs/libs.archive -d "$HOME/.ripley/sdks/iphoneos" ;;
+              *)     tar xzf /tmp/swiftlibs/libs.archive -C "$HOME/.ripley/sdks/iphoneos" ;;
+            esac
+            rm -rf /tmp/swiftlibs
+          fi
+          sdk=$(find "$HOME/.ripley/sdks" -maxdepth 2 -name 'iPhoneOS*.sdk' -print -quit)
+          if [ -d "$HOME/.ripley/sdks/iphoneos" ]; then
+            echo "Swift iOS libs at $HOME/.ripley/sdks/iphoneos"
+          elif [ -d "$sdk/usr/lib/swift" ]; then
+            echo "Swift iOS libs from the SDK at $sdk/usr/lib/swift"
+          else
+            echo "::error::no Swift iOS runtime libraries found. Compiling the sample app's AppDelegate.swift needs XcodeDefault.xctoolchain/usr/lib/swift/iphoneos. Ship it inside the IPHONEOS_SDK_URL archive as iphoneos/, or set the SWIFT_IOS_LIBS_URL secret."
+            exit 1
+          fi
+
+      # ORDER MATTERS: `ripley setup` runs Toolchain.Ensure, whose ensureGenSnapshot
+      # step hard-fails when no gen_snapshot_ios_arm64 is installed yet. Fetching
+      # the published cross binary first satisfies it and skips the ~30 minute
+      # source build. RIPLEY_GEN_SNAPSHOT_REPO points the fetcher at this
+      # repository's own releases (see .github/workflows/gen-snapshot.yml).
+      - name: Fetch the prebuilt cross gen_snapshot
+        env:
+          RIPLEY_GEN_SNAPSHOT_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ripley toolchain fetch
+
+      - name: Provision the ripley toolchain
+        run: |
+          set -euo pipefail
+          ripley setup
+          test -x "$HOME/.ripley"/*/gen_snapshot_ios_arm64
+
+      - name: Create the sample app
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          flutter create ripley_e2e_sample
+          cd ripley_e2e_sample
+          flutter pub get
+
+      - name: ripley build ios --no-sign
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ripley_e2e_sample"
+          ripley build ios --no-sign
+
+      # An .app that exists but holds a host-arch ELF would be a silent
+      # failure, so assert the real Mach-O arch of both binaries.
+      - name: Assert arm64 Mach-O output
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ripley_e2e_sample"
+          app=$(find build/ripley_ios -maxdepth 1 -name '*.app' -print -quit)
+          if [ -z "$app" ]; then
+            echo "::error::no .app produced under build/ripley_ios"
+            exit 1
+          fi
+          host="$app/$(basename "$app" .app)"
+          aot="$app/Frameworks/App.framework/App"
+          file "$host" "$aot"
+          for bin in "$host" "$aot"; do
+            file "$bin" | grep -q 'Mach-O.*arm64' || {
+              echo "::error::$bin is not an arm64 Mach-O"
+              exit 1
+            }
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ripley-e2e-app
+          path: ${{ runner.temp }}/ripley_e2e_sample/build/ripley_ios/
+          if-no-files-found: error

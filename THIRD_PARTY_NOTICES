@@ -1,0 +1,221 @@
+Ripley third-party notices
+==========================
+
+Ripley's original source code is licensed under the Apache License 2.0 in
+LICENSE. Third-party material retains its original license. This file records
+third-party material that is incorporated into Ripley source/binaries or is
+materially used by Ripley's build pipeline.
+
+1. Go runtime and standard library
+----------------------------------
+
+Ripley release binaries are built with Go and statically include portions of
+the Go runtime and standard library.
+
+Copyright 2009 The Go Authors.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+   * Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
+   * Neither the name of Google LLC nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Source: https://go.dev/
+
+2. go-yaml/yaml v3 (gopkg.in/yaml.v3)
+-------------------------------------
+
+Ripley links gopkg.in/yaml.v3. Upstream uses two licenses: specific files
+ported from libyaml are MIT-licensed; the remaining project files are licensed
+under Apache-2.0. The Apache-2.0 license text is reproduced in Ripley's LICENSE.
+
+MIT-covered files listed by upstream:
+  apic.go emitterc.go parserc.go readerc.go scannerc.go
+  writerc.go yamlh.go yamlprivateh.go
+
+Copyright (c) 2006-2010 Kirill Simonov
+Copyright (c) 2006-2011 Kirill Simonov
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Apache-covered files:
+Copyright (c) 2011-2019 Canonical Ltd
+Licensed under the Apache License, Version 2.0.
+
+Source: https://github.com/go-yaml/yaml/tree/v3
+
+3. howett.net/plist v1.0.1
+--------------------------
+
+Ripley links howett.net/plist.
+
+Copyright (c) 2013, Dustin L. Howett. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the FreeBSD Project.
+
+Parts of howett.net/plist were made available under the license covering the Go
+language and core libraries. The relevant Go license is reproduced in section 1
+above.
+
+Source: https://github.com/DHowett/go-plist/tree/v1.0.1
+
+4. Dart SDK build configuration
+--------------------------------
+
+Small GN build-configuration fragments in internal/toolchain/toolchain_build.go
+are adapted from Dart SDK build files so Ripley can build a Linux-hosted
+`gen_snapshot` that emits iOS arm64 AOT images. Those portions retain Dart's
+BSD-3-Clause terms.
+
+Copyright 2012, the Dart project authors.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Google LLC nor the names of its contributors may be used
+  to endorse or promote products derived from this software without specific
+  prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Source: https://github.com/dart-lang/sdk
+
+Prebuilt `gen_snapshot` assets published by the Ripley project are binaries
+built from Dart SDK source. Each such release includes a separate LICENSES text
+asset collected from the exact Dart source checkout used for that build.
+
+5. Flutter-generated fixture material
+--------------------------------------
+
+The checked-in `testdata/e2e/*` regression projects started from `flutter create`
+templates and were then modified for Ripley-specific tests. Template-derived
+files and resources retain Flutter's BSD-3-Clause terms.
+
+Copyright 2014 The Flutter Authors. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Google Inc. nor the names of its contributors may be used
+  to endorse or promote products derived from this software without specific
+  prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Source: https://github.com/flutter/flutter
+
+6. Tools and artifacts downloaded from upstream
+------------------------------------------------
+
+The following components are not part of the Ripley source tree or Ripley CLI
+binary. Ripley downloads them from their upstream distributors into the local
+user toolchain cache. Their own licenses continue to apply.
+
+* darwin-tools-linux-llvm, from xtool-org
+  Source: https://github.com/xtool-org/darwin-tools-linux-llvm
+  Wrapper/build repository: MIT, Copyright (c) 2024 Kabir Oberai.
+  The distributed ld64.lld, dsymutil, and llvm-libtool-darwin binaries are built
+  from LLVM and are subject to Apache-2.0 WITH LLVM-exception and applicable
+  third-party LLVM notices.
+
+* zsign
+  Source: https://github.com/zhlynn/zsign
+  License: MIT, Copyright (c) 2026 zhlynn.
+  Ripley downloads the pinned upstream Linux release asset and verifies its
+  SHA-256 before installing it into the local toolchain cache.
+
+* Dart SDK and Flutter engine artifacts
+  Sources: https://github.com/dart-lang/sdk and https://github.com/flutter/flutter
+  Primary project licenses: BSD-3-Clause, with additional third-party licenses
+  applying to bundled artifacts. Ripley downloads these artifacts from the
+  upstream Dart/Flutter distribution infrastructure rather than redistributing
+  them as part of the Ripley CLI release.
+
+* Apple iPhoneOS SDK and Swift iOS runtime files
+  Ripley does not redistribute Apple SDK/runtime files. Users must provide files
+  they are authorized to use, under the applicable Apple terms.
